@@ -1,0 +1,7 @@
+# Set line length to 135 characters
+max_width = 135
+
+# Set chain width to 135 characters
+chain_width = 135
+
+newline_style = "Always"

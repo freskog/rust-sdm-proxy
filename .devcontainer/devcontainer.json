@@ -1,0 +1,26 @@
+{
+  "name": "Rust SDM Proxy",
+  "dockerFile": "Dockerfile",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "bungcip.better-toml",
+        "matklad.rust-analyzer",
+        "emjaycee.vscode-base64",
+        "rcjsuen.rust-test-adapter",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "source=root-home,target=/root,type=volume,consistency=cached"
+  ],
+  "runArgs": [
+    "-e", "UID=$(id -u)",
+    "-e", "GID=$(id -g)"
+  ]
+}
