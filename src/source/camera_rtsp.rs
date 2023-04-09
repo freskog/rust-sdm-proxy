@@ -1,12 +1,12 @@
 
 
-use crate::pipeline_builder::PipelineBuilder;
+use crate::bin_builder::BinBuilder;
 use crate::google_api::*;
 
 use std::{time::{Duration}, sync::{Arc, Mutex}};
 
 pub trait CameraRtspInterpreter {
-    fn interpret(&self, device_id:&str) -> Arc<Mutex<PipelineBuilder>>;
+    fn interpret(&self, device_id:&str) -> Arc<Mutex<BinBuilder>>;
 }
 
 pub struct CameraRtspInterpreterImpl {
@@ -14,7 +14,7 @@ pub struct CameraRtspInterpreterImpl {
 }
 
 impl CameraRtspInterpreter for CameraRtspInterpreterImpl {
-    fn interpret(&self, device_id:&str) -> Arc<Mutex<PipelineBuilder>> {
+    fn interpret(&self, device_id:&str) -> Arc<Mutex<BinBuilder>> {
         CameraRtspInterpreterImpl::camera_rtsp_stream(self.google_api, device_id)
     }
 }
@@ -22,14 +22,14 @@ impl CameraRtspInterpreter for CameraRtspInterpreterImpl {
 impl CameraRtspInterpreterImpl {
     
 
-    fn camera_rtsp_stream(google_api: &'static dyn GoogleApiClient, device_id: &str) -> Arc<Mutex<PipelineBuilder>> {
+    fn camera_rtsp_stream(google_api: &'static dyn GoogleApiClient, device_id: &str) -> Arc<Mutex<BinBuilder>> {
         let rtsp_info = 
             google_api
                 .generate_rtsp_stream(device_id)
                 .expect(&format!("Can't generate rtsp stream for device_id: {}", device_id));
 
         let pipeline_builder_original = 
-            Arc::new(Mutex::new(PipelineBuilder::new(&format!("RTSP Camera: {}", device_id))));
+            Arc::new(Mutex::new(BinBuilder::new(&format!("RTSP Camera: {}", device_id))));
 
         let pipeline_builder = pipeline_builder_original.clone();
         let url = format!("{}?auth={}", rtsp_info.base_rtsp_url, rtsp_info.stream_token);
@@ -65,7 +65,7 @@ impl CameraRtspInterpreterImpl {
     }
 
     fn handle_rtsp_stream_extension(
-        pipeline_builder: Arc<Mutex<PipelineBuilder>>,
+        pipeline_builder: Arc<Mutex<BinBuilder>>,
         device_id: &str,
         rtsp_info: RtspStreamInfo,
         google_api: &'static dyn GoogleApiClient
@@ -108,7 +108,7 @@ impl CameraRtspInterpreterImpl {
     }
 
     fn handle_rtsp_stream_switch(
-        pipeline_builder: Arc<Mutex<PipelineBuilder>>,
+        pipeline_builder: Arc<Mutex<BinBuilder>>,
         new_rtsp_info: RtspStreamInfo,
     ) {
         

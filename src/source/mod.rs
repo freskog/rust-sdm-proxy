@@ -9,7 +9,7 @@ use self::camera_rtsp::CameraRtspInterpreter;
 use self::concat::ConcatInterpreter;
 use self::restart_on_error::RestartOnErrorInterpreter;
 
-use crate::pipeline_builder::PipelineBuilder;
+use crate::bin_builder::BinBuilder;
 
 #[derive(Debug, Clone)]
 pub enum Source {
@@ -40,7 +40,7 @@ impl<'a> SourceInterpreter<'a> {
     }
     
     #[rustfmt::skip]
-    pub fn interpret_stream(self: &Self, stream: &Source) -> Arc<Mutex<PipelineBuilder>> {    
+    pub fn interpret_stream(self: &Self, stream: &Source) -> Arc<Mutex<BinBuilder>> {    
         match stream {
             Source::CameraRtsp { device_id }                     => self.camera_rtsp.interpret(device_id),
             Source::Concat { first, second }  => self.concat.interpret(first, second),
