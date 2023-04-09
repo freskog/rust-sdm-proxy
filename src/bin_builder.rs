@@ -1,8 +1,7 @@
-use gstreamer::{prelude::*};
+use gstreamer::{prelude::*, ResourceError, PadDirection, GhostPad};
 use gstreamer::{Element, ElementFactory, Bin};
 use gstreamer::glib::Value;
 use std::time::{Instant};
-use anyhow::{Error};
 
 use glib::*;
 
@@ -20,20 +19,14 @@ impl BinBuilder {
             link_to: None
         }
     }
-    pub fn post_error_message(&self, msg: &str) -> &Self {
-        let error_message = gstreamer::ErrorMessage::new(
-            gstreamer::CoreError::Failed,
-            Some(msg),
-            gstreamer::Debug::new(None, None, None),
-        );
     
-        let message = gstreamer::Message::new_error(self.bin.upcast_ref(), error_message);
-    
-        let bus = self.bin.bus().expect("Bin without bus");
-        bus.post(&message).expect("Failed to post error message");
-    
+    fn post_error_message(&self, error_message: &str) -> &Self {
+        let msg = gstreamer::message::Error::new(ResourceError::Failed, error_message);
+        let bus = self.bin.bus().unwrap();
+        bus.post(msg).unwrap();
         self
     }
+
 
     pub fn handle_bus_error<F>(&self, mut callback: F)
     where
@@ -46,7 +39,7 @@ impl BinBuilder {
                 let src = err.src().unwrap();
                 let factory_name = if let Ok(element) = src.downcast::<gstreamer::Element>() {
                     if let Some(factory) = element.factory() {
-                        factory.name()
+                        factory.name().to_string()
                     } else {
                         "<non-gstreamer-error>".to_string()
                     }
@@ -60,21 +53,22 @@ impl BinBuilder {
         });
     }
 
-    pub fn set_link_element(&mut self, name: &str) -> &BinHandler {
-        self.link_element = self.bin.by_name(name).map(|element| element.clone());
+    pub fn set_link_element(&mut self, name: &str) -> &mut Self {
+        self.link_to = self.bin.by_name(name).map(|element| element.clone());
         self
     }
 
     pub fn add_ghost_src_pads(&mut self) -> &Self {
-        if let Some(ref link_element) = self.link_element {
+        if let Some(ref link_element) = self.link_to {
             // Iterate over pad templates and handle all kinds of src pads
-            for pad_template in link_element.pad_templates() {
+            for pad_template in link_element.pad_template_list() {
                 if pad_template.direction() == PadDirection::Src {
                     match pad_template.presence() {
                         gstreamer::PadPresence::Always => {
                             let src_pads = link_element.src_pads();
                             for src_pad in src_pads {
-                                let ghost_pad = GhostPad::new(None, &src_pad).expect("Failed to create ghost pad");
+                                let ghost_pad = GhostPad::new(None, PadDirection::Src);
+                                ghost_pad.set_target(Some(&src_pad)).expect("Failed to create ghost pad");
                                 self.bin.add_pad(&ghost_pad).expect("Failed to add ghost pad to bin");
                             }
                         }
