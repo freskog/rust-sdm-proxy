@@ -75,14 +75,21 @@ impl BinBuilder {
                         gstreamer::PadPresence::Sometimes => {
                             // Handle dynamic linking
                             link_element.connect_pad_added(move |element, src_pad| {
-                                let ghost_pad = GhostPad::new(None, &src_pad).expect("Failed to create ghost pad");
-                                let _ = element.upcast_ref::<Bin>().add_pad(&ghost_pad);
+                                let ghost_pad = GhostPad::with_target(None, src_pad).expect("Failed to create ghost pad");
+                                match element.clone().downcast::<Bin>() {
+                                    Ok(bin) => {
+                                        let _ = bin.add_pad(&ghost_pad);
+                                    }
+                                    Err(_) => {
+                                        eprintln!("Element is not a Bin");
+                                    }
+                                }
                             });
                         }
                         gstreamer::PadPresence::Request => {
                             // Handle request pads
                             let src_pad = link_element.request_pad(&pad_template, None, None).expect("Failed to request pad");
-                            let ghost_pad = GhostPad::new(None, &src_pad).expect("Failed to create ghost pad");
+                            let ghost_pad = GhostPad::with_target(None, &src_pad).expect("Failed to create ghost pad");
                             self.bin.add_pad(&ghost_pad).expect("Failed to add ghost pad to bin");
                         }
                     }
