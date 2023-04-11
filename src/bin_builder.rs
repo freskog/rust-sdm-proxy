@@ -9,49 +9,26 @@ use glib::*;
 #[derive(Debug, Clone)]
 pub struct BinBuilder {
     bin: Bin,
-    link_to: Option<Element>
+    link_to: Option<Element>,
 }
 
 impl BinBuilder {
     pub fn new(name: &str) -> Self {
         Self {
             bin: Bin::new(Some(name)),
-            link_to: None
+            link_to: None,
         }
     }
     
-    fn post_error_message(&self, error_message: &str) -> &Self {
-        let msg = gstreamer::message::Error::new(ResourceError::Failed, error_message);
+    pub fn post_error_message(&self, category:&str, error_message: &str) -> &Self {
+        let msg = 
+            gstreamer::message::Error::new(ResourceError::Failed, error_message);
+        
         let bus = self.bin.bus().unwrap();
         bus.post(msg).unwrap();
         self
     }
 
-
-    pub fn handle_bus_error<F>(&self, mut callback: F)
-    where
-        F: FnMut(String, String) + Send + 'static,
-    {
-        let bus = self.bin.bus().expect("Failed to get bus from bin");
-
-        bus.connect_message(None, move |_, msg| {
-            if let gstreamer::MessageView::Error(err) = msg.view() {
-                let src = err.src().unwrap();
-                let factory_name = if let Ok(element) = src.downcast::<gstreamer::Element>() {
-                    if let Some(factory) = element.factory() {
-                        factory.name().to_string()
-                    } else {
-                        "<non-gstreamer-error>".to_string()
-                    }
-                } else {
-                    "<non-gstreamer-error>".to_string()
-                };
-
-                let error_description = err.error().message().to_string();
-                callback(factory_name, error_description);
-            }
-        });
-    }
 
     pub fn set_link_element(&mut self, name: &str) -> &mut Self {
         self.link_to = self.bin.by_name(name).map(|element| element.clone());
@@ -226,4 +203,15 @@ impl BinBuilder {
         .expect(&format!("No such element")) 
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn construct_error_message() {
+        gstreamer::init().unwrap();
+        gstreamer::message::Error::new(ResourceError::Failed, "test"); 
+    }
 }

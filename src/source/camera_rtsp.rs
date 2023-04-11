@@ -98,7 +98,7 @@ impl CameraRtspInterpreterImpl {
                             google_api);
                     },
                     Err(err) => {
-                        pipeline_builder.lock().unwrap().failure(err)
+                        ()
                     }
                 } 
 
